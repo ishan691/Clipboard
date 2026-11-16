@@ -1,0 +1,4 @@
+/* Hallmark · shared baseline for the transfer workspace */
+html, body { overflow-x: clip; }
+body { background: var(--canvas); color: var(--ink); }
+::selection { background: var(--accent-soft); color: var(--ink); }

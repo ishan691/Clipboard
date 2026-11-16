@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ArrowUpRight, Clock3, FileText, Files, HardDrive, RefreshCw } from 'lucide-react';
+import { ArrowUpRight, Clock3, FileText, Files, RefreshCw, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { Header } from './components/Header';
 import { DragDropZone } from './components/DragDropZone';
@@ -11,7 +11,16 @@ import { API_BASE, QueueItem, Settings, TransferRecord, formatSize, request, upl
 const defaults: Settings = { maxFileSizeBytes: 10 * 1024 ** 3, maxBatchFiles: 50, maxTextBytes: 1024 ** 2, expirationHours: 24 };
 
 export default function App() {
-  const [tab, setTab] = useState<'files' | 'text'>('files');
+  const [tab, setTab] = useState<'files' | 'text'>(() => window.location.hash === '#text' ? 'text' : 'files');
+  const changeTab = (next: 'files' | 'text') => {
+    setTab(next);
+    window.history.replaceState(null, '', `#${next}`);
+  };
+  useEffect(() => {
+    const syncTab = () => setTab(window.location.hash === '#text' ? 'text' : 'files');
+    window.addEventListener('hashchange', syncTab);
+    return () => window.removeEventListener('hashchange', syncTab);
+  }, []);
   const [queue, setQueue] = useState<QueueItem[]>([]);
   const [busy, setBusy] = useState(false);
   const [keepForever, setKeepForever] = useState(false);
@@ -144,30 +153,51 @@ export default function App() {
   };
   const visible = transfers.filter(item => new Date(item.expiresAt).getTime() > Date.now());
 
+  const fileTransfers = visible.filter(item => item.type !== 'text');
+  const textTransfers = visible.filter(item => item.type === 'text');
+  const currentTransfers = tab === 'files' ? fileTransfers : textTransfers;
+
   return <><Header status={status} /><main className="shell workspace">
-    <section className="intro"><div><p className="eyebrow"><span /> LESS FRICTION. MORE FLOW.</p><h1>Your files.<br className="mobile-break" /> Within reach<span>.</span></h1>
-      <p className="intro-copy">From one device to the next. Share files and notes<br className="desktop-break" /> in a workspace that stays out of your way.</p></div>
-      <div className="workspace-summary"><div><Files size={17} /><strong>{visible.length}</strong><span>active transfers</span></div>
-        <div><HardDrive size={17} /><strong>{formatSize(visible.reduce((sum, item) => sum + item.size, 0))}</strong><span>in your workspace</span></div></div>
+    <section className="intro">
+      <div><h1>Transfer workspace</h1><p className="intro-copy">A shared place for files and text. Ready on your next device.</p></div>
+      <div className="workspace-label"><ShieldCheck size={16} /> Shared workspace</div>
     </section>
-    {status === 'offline' && <div className="connection-banner" role="alert">We couldn’t reach your workspace. Your queued files and drafts are safe.<button onClick={() => void refresh()}>Reconnect <RefreshCw size={13} /></button></div>}
-    <div className="workspace-grid"><section className="panel composer"><div className="panel-heading"><span className="section-label">01 / SEND SOMETHING</span><ArrowUpRight size={19} /></div>
-      <div className="tabs" role="tablist" aria-label="Transfer content"><button id="files-tab" role="tab" aria-selected={tab === 'files'} aria-controls="files-panel" disabled={busy} onClick={() => setTab('files')}><Files size={16} /> Files</button>
-        <button id="text-tab" role="tab" aria-selected={tab === 'text'} aria-controls="text-panel" disabled={busy} onClick={() => setTab('text')}><FileText size={16} /> Text</button></div>
-      <div id="files-panel" role="tabpanel" aria-labelledby="files-tab" hidden={tab !== 'files'}>
-        <DragDropZone onFilesSelected={addFiles} disabled={busy} maxSize={settings.maxFileSizeBytes} />
-        <StagedFilesList items={queue} busy={busy} canSend={status === 'online'} onRemove={id => setQueue(previous => previous.filter(item => item.id !== id))}
-          onUpload={zip => void sendFiles(zip)} onCancel={() => active.current?.abort()} />
-      </div>
-      <div id="text-panel" role="tabpanel" aria-labelledby="text-tab" hidden={tab !== 'text'}><QuickTextBox onSendText={sendText} busy={busy} canSend={status === 'online'} maxBytes={settings.maxTextBytes} /></div>
-      <div className="retention-setting"><Clock3 size={15} /><label htmlFor="retention">Available for</label><select id="retention" disabled={busy} value={keepForever ? 'forever' : 'default'} onChange={event => setKeepForever(event.target.value === 'forever')}>
-        <option value="default">{settings.expirationHours} hours</option><option value="forever">Until deleted</option></select></div>
+    {status === 'offline' && <div className="connection-banner" role="alert">We couldn’t reach your workspace. Your queued files and drafts are safe.<button onClick={() => void refresh()}>Reconnect <RefreshCw size={16} /></button></div>}
+    <section className="workspace-summary" aria-label="Workspace overview">
+      <div><span>Active file transfers</span><strong>{fileTransfers.length}<span>files & archives</span></strong></div>
+      <div><span>Text snippets</span><strong>{textTransfers.length}<span>ready to share</span></strong></div>
+      <div><span>Workspace size</span><strong>{formatSize(visible.reduce((sum, item) => sum + item.size, 0))}<span>across active transfers</span></strong></div>
     </section>
-    <section className="panel history"><div className="panel-heading"><div><span className="section-label">02 / YOUR WORKSPACE</span><h2>Ready when you are<span className="count-badge">{visible.length}</span></h2></div>
-      <button className={`icon-button ${refreshing ? 'spin' : ''}`} aria-label="Refresh transfers" disabled={refreshing} onClick={() => void refresh()}><RefreshCw size={17} /></button></div>
-      <RecentTransfersTable transfers={visible} loading={refreshing} onDelete={deleteTransfer} />
-      <div className="history-footer"><span className="sync-dot" />{lastSynced ? `Synced at ${lastSynced.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'Waiting for connection'}<span className="history-limit">Latest 200 transfers</span></div>
-    </section></div>
-    <footer className="workspace-footer"><span>One network. A little less back and forth.</span><span>Shared workspace · Visible to anyone who can reach this app.</span></footer>
+    <div className="tabs" role="tablist" aria-label="Transfer content" onKeyDown={event => {
+      if (busy || !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+      event.preventDefault();
+      const next = event.key === 'Home' ? 'files' : event.key === 'End' ? 'text' : tab === 'files' ? 'text' : 'files';
+      changeTab(next);
+      document.getElementById(`${next}-tab`)?.focus();
+    }}>
+      <button id="files-tab" role="tab" aria-selected={tab === 'files'} aria-controls="files-panel" tabIndex={tab === 'files' ? 0 : -1} disabled={busy} onClick={() => changeTab('files')}><Files size={18} /> Files<span className="tab-count">{fileTransfers.length}</span></button>
+      <button id="text-tab" role="tab" aria-selected={tab === 'text'} aria-controls="text-panel" tabIndex={tab === 'text' ? 0 : -1} disabled={busy} onClick={() => changeTab('text')}><FileText size={18} /> Text<span className="tab-count">{textTransfers.length}</span></button>
+      <span className="tabs-caption">One workspace, fewer round trips</span>
+    </div>
+    <div className={`workspace-grid ${tab === 'text' ? 'text-workspace' : ''}`}>
+      <section className="panel composer" aria-label={tab === 'files' ? 'Send files' : 'Send text'}>
+        <div className="panel-heading"><div><h2>{tab === 'files' ? 'Send files' : 'Send text'}</h2><p>{tab === 'files' ? 'Move something to your next device' : 'Keep a note, link, or code within reach'}</p></div><span className="heading-symbol">{tab === 'files' ? <ArrowUpRight size={20} /> : <FileText size={20} />}</span></div>
+        <div id="files-panel" role="tabpanel" aria-labelledby="files-tab" hidden={tab !== 'files'}>
+          <DragDropZone onFilesSelected={addFiles} disabled={busy} maxSize={settings.maxFileSizeBytes} />
+          <StagedFilesList items={queue} busy={busy} canSend={status === 'online'} onRemove={id => setQueue(previous => previous.filter(item => item.id !== id))}
+            onUpload={zip => void sendFiles(zip)} onCancel={() => active.current?.abort()} />
+        </div>
+        <div id="text-panel" role="tabpanel" aria-labelledby="text-tab" hidden={tab !== 'text'}><QuickTextBox onSendText={sendText} busy={busy} canSend={status === 'online'} maxBytes={settings.maxTextBytes} /></div>
+        <div className="retention-setting"><Clock3 size={16} /><label htmlFor="retention">Available for</label><select id="retention" disabled={busy} value={keepForever ? 'forever' : 'default'} onChange={event => setKeepForever(event.target.value === 'forever')}>
+          <option value="default">{settings.expirationHours} hours</option><option value="forever">Until deleted</option></select></div>
+      </section>
+      <section className="panel history" aria-labelledby="history-title">
+        <div className="panel-heading"><div><h2 id="history-title">{tab === 'files' ? 'Recent files' : 'Recent text'}<span className="count-badge">{currentTransfers.length}</span></h2><p>Download, copy a link, or clear a transfer</p></div>
+          <button className="icon-button" aria-label="Refresh transfers" disabled={refreshing} onClick={() => void refresh()}><RefreshCw className={refreshing ? 'spin' : ''} size={18} /></button></div>
+        <RecentTransfersTable key={tab} transfers={currentTransfers} loading={refreshing} onDelete={deleteTransfer} />
+        <div className="history-footer"><span>{lastSynced ? `Last synced ${lastSynced.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'Waiting for connection'}</span><span>Latest 200 transfers</span></div>
+      </section>
+    </div>
+    <footer className="workspace-footer"><span><ShieldCheck size={16} />Shared workspace · Visible to anyone who can reach this app.</span><span>Files and text, within reach</span></footer>
   </main></>;
 }

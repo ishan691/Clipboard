@@ -1,0 +1,46 @@
+/* Hallmark · Coral app tokens · neutral surfaces, coral selection, native UI typography */
+:root {
+  --font-ui: 'Segoe UI', ui-sans-serif, system-ui, sans-serif;
+  --font-body: var(--font-ui);
+  --font-display: var(--font-ui);
+  --canvas: #f6f6f4;
+  --surface: #fefefd;
+  --surface-soft: #f3f3f0;
+  --ink: #272925;
+  --secondary: #62645e;
+  --muted: #73756e;
+  --rule: #e5e5df;
+  --rule-strong: #cccfc5;
+  --accent: #a5412d;
+  --accent-soft: #f9ede8;
+  --button: #2b302b;
+  --button-hover: #444b42;
+  --button-ink: #fefefd;
+  --success: #3a6548;
+  --success-soft: #edf3ed;
+  --danger: #a0332a;
+  --danger-soft: #fbefeb;
+  --focus: #ad4c34;
+  --transparent: transparent;
+  --overlay: #20251f66;
+  --dialog-shadow: 0 24px 64px #20251f26;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --radius-control: 8px;
+  --radius-panel: 12px;
+  --duration: 160ms;
+  font-family: var(--font-ui);
+  color: var(--ink);
+  background: var(--canvas);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}

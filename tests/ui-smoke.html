@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>LiquidVault UI smoke check</title>
+<h1>Transfer dashboard smoke check</h1>
+<p>Run the Vite server and open /tests/ui-smoke.html. This check does not send or delete transfers.</p>
+<button id="run">Run checks</button>
+<pre id="result" role="status"></pre>
+<iframe id="app" title="Transfer dashboard under test" width="1280" height="900"></iframe>
+<script type="module">
+const frame = document.querySelector('#app');
+const output = document.querySelector('#result');
+const run = document.querySelector('#run');
+function assert(condition, message) {
+  if (!condition) throw new Error(message);
+  output.textContent += `PASS ${message}\n`;
+}
+async function waitFor(predicate) {
+  const deadline = Date.now() + 15000;
+  while (!predicate()) {
+    if (Date.now() > deadline) throw new Error('Timed out waiting for the app');
+    await new Promise(resolve => setTimeout(resolve, 50));
+  }
+}
+run.onclick = async () => {
+  run.disabled = true;
+  output.textContent = '';
+  try {
+    frame.src = '/#text';
+    await waitFor(() => frame.contentDocument?.querySelector('#text-tab'));
+    const doc = frame.contentDocument;
+    const win = frame.contentWindow;
+    const textTab = doc.querySelector('#text-tab');
+    const filesTab = doc.querySelector('#files-tab');
+    assert(textTab.getAttribute('aria-selected') === 'true', 'Direct text link selects Text');
+    const textarea = doc.querySelector('#snippet-text');
+    const setValue = Object.getOwnPropertyDescriptor(win.HTMLTextAreaElement.prototype, 'value').set;
+    setValue.call(textarea, 'Keep this draft while switching tabs');
+    textarea.dispatchEvent(new win.Event('input', { bubbles: true }));
+    filesTab.click();
+    await waitFor(() => filesTab.getAttribute('aria-selected') === 'true');
+    assert(doc.querySelector('#text-panel').hidden, 'Files hides the text composer');
+    assert(!doc.querySelector('#files-panel').hidden, 'Files shows the upload composer');
+    assert(doc.querySelector('#history-title').textContent.startsWith('Recent files'), 'Files shows file history');
+    assert(win.location.hash === '#files', 'Selected tab is reflected in the URL');
+    filesTab.dispatchEvent(new win.KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+    await waitFor(() => textTab.getAttribute('aria-selected') === 'true');
+    assert(doc.activeElement === textTab, 'Arrow key selects and focuses Text');
+    assert(textarea.value === 'Keep this draft while switching tabs', 'Text draft survives tab switching');
+    assert(doc.querySelector('#history-title').textContent.startsWith('Recent text'), 'Text shows text history');
+    frame.width = '390';
+    await new Promise(resolve => setTimeout(resolve, 100));
+    assert(doc.documentElement.scrollWidth <= win.innerWidth, 'Mobile layout has no horizontal overflow');
+    assert(getComputedStyle(doc.querySelector('.workspace-grid')).gridTemplateColumns.split(' ').length === 1, 'Mobile composers and history stack');
+    output.textContent += '\nAll UI checks passed';
+  } catch (error) {
+    output.textContent += `FAIL ${error.message}`;
+  } finally { run.disabled = false; }
+};
+</script>
+</html>

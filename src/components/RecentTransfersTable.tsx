@@ -34,14 +34,14 @@ export function RecentTransfersTable({ transfers, loading, onDelete }: Props) {
     try { await onDelete(id); setConfirm(null); } finally { setDeleting(null); }
   };
   return <>
-    <div className="history-tools"><div className="search-field"><Search size={16} /><input aria-label="Search transfers" placeholder="Find a file or note" value={search} onChange={e => setSearch(e.target.value)} /></div>
-      <select aria-label="Filter transfer type" value={type} onChange={e => setType(e.target.value)}><option value="all">All types</option><option value="file">Files</option><option value="text">Text</option><option value="zip">Archives</option></select></div>
+    <div className="history-tools"><div className="search-field"><Search size={16} /><input aria-label="Search transfers" placeholder="Search transfers" value={search} onChange={e => setSearch(e.target.value)} /></div>
+      <select aria-label="Filter transfer type" value={type} onChange={e => setType(e.target.value)}><option value="all">All types</option><option value="file">Files</option><option value="zip">Archives</option></select></div>
     <div className="transfer-list" data-testid="recent-transfers-list" aria-busy={loading}>
       {loading && !transfers.length ? <div className="skeleton-list" aria-label="Loading transfers">{[1, 2, 3].map(i => <div className="skeleton" key={i} />)}</div>
-        : !filtered.length ? <div className="empty-state"><div className="empty-icon"><Archive size={28} strokeWidth={1.25} /></div><h3>{transfers.length ? 'No matches found' : 'A little space to share.'}</h3><p>{transfers.length ? 'Try another name or file type.' : 'Your files and notes will appear here, ready for another device.'}</p></div>
+        : !filtered.length ? <div className="empty-state"><div className="empty-icon"><Archive size={28} strokeWidth={1.25} /></div><h3>{transfers.length ? 'No matches found' : 'No transfers yet'}</h3><p>{transfers.length ? 'Try another name or file type.' : 'Send a file or text to make it available here.'}</p></div>
           : filtered.map(transfer => <article className="transfer-row" key={transfer.id}>
             <span className={`file-icon type-${transfer.type}`}>{transfer.type === 'text' ? <FileText size={20} /> : transfer.type === 'zip' ? <Archive size={20} /> : <File size={20} />}</span>
-            <div className="file-details"><h3 className="filename" title={transfer.filename}>{transfer.filename}</h3><p className="file-meta">{formatSize(transfer.size)}<span className="meta-dot">·</span>{expiry(transfer.expiresAt)}</p></div>
+            <div className="file-details"><h3 className="filename" title={transfer.filename}>{transfer.filename}</h3><p className="file-meta">{formatSize(transfer.size)}<span className="meta-divider" aria-hidden="true" />{expiry(transfer.expiresAt)}</p></div>
             <div className="row-actions">{confirm === transfer.id ? <><button className="delete-confirm" disabled={deleting === transfer.id} onClick={() => void remove(transfer.id)}>Delete?</button><button className="icon-button" aria-label="Cancel deletion" onClick={() => setConfirm(null)}><X size={16} /></button></>
               : <><button className="icon-button" aria-label={`Copy link for ${transfer.filename}`} title="Copy link" onClick={() => void copy(transfer.id)}><Link size={16} /></button>
                 <a className="icon-button download-action" href={`${API_BASE}/download/${transfer.id}`} download aria-label={`Download ${transfer.filename}`} title="Download"><ArrowDown size={17} /></a>

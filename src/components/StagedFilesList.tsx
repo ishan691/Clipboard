@@ -11,11 +11,11 @@ export function StagedFilesList({ items, busy, canSend, onRemove, onUpload, onCa
   if (!items.length) return null;
   const errors = items.some(item => item.status === 'error');
   return <section className="queue" aria-label="Upload queue">
-    <div className="section-label"><span>{items.length} {items.length === 1 ? 'FILE' : 'FILES'} IN QUEUE</span><span>{formatSize(items.reduce((sum, item) => sum + item.file.size, 0))}</span></div>
+    <div className="section-label"><span>{items.length} {items.length === 1 ? 'file' : 'files'} in queue</span><span>{formatSize(items.reduce((sum, item) => sum + item.file.size, 0))}</span></div>
     <div className="queue-list">{items.map(item => <div className="queue-item" key={item.id}>
       <div className="queue-top"><span className={`file-icon ${item.status === 'done' ? 'success-icon' : ''}`}>{item.status === 'done' ? <Check size={17} /> : <File size={17} />}</span>
         <div className="file-details"><span className="filename" title={item.file.name}>{item.file.name}</span><span className={`file-meta ${item.error ? 'text-error' : ''}`}>
-          {item.error || (item.status === 'uploading' ? item.progress >= 100 ? 'Finalizing…' : `${Math.round(item.progress)}% · ${formatSize(item.speed)}/s` : item.status === 'done' ? 'Transferred' : formatSize(item.file.size))}
+          {item.error || (item.status === 'uploading' ? item.progress >= 100 ? 'Finalizing…' : `${Math.round(item.progress)}% / ${formatSize(item.speed)}/s` : item.status === 'done' ? 'Transferred' : formatSize(item.file.size))}
         </span></div>
         {!busy && <button className="icon-button" aria-label={`Remove ${item.file.name}`} onClick={() => onRemove(item.id)}><X size={16} /></button>}
       </div>{item.status === 'uploading' && <ProgressBar progress={item.progress} label={`Uploading ${item.file.name}`} />}
