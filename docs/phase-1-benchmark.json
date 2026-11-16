@@ -1,0 +1,37 @@
+{
+  "date": "2026-10-28",
+  "environment": "Windows-11-10.0.26300-SP0",
+  "processor": "Intel64 Family 6 Model 186 Stepping 2, GenuineIntel",
+  "sdk_version": "8.0.418",
+  "file_size_bytes": 33554432,
+  "concurrency": 1,
+  "runs": [
+    {
+      "run": 1,
+      "upload_seconds": 0.0264,
+      "download_seconds": 0.0755,
+      "upload_MiB_per_second": 1213.7,
+      "download_MiB_per_second": 423.76,
+      "sha256_verified": true
+    },
+    {
+      "run": 2,
+      "upload_seconds": 0.0176,
+      "download_seconds": 0.0558,
+      "upload_MiB_per_second": 1815.42,
+      "download_MiB_per_second": 573.28,
+      "sha256_verified": true
+    },
+    {
+      "run": 3,
+      "upload_seconds": 0.0727,
+      "download_seconds": 0.0633,
+      "upload_MiB_per_second": 440.25,
+      "download_MiB_per_second": 505.26,
+      "sha256_verified": true
+    }
+  ],
+  "median_upload_MiB_per_second": 1213.7,
+  "median_download_MiB_per_second": 505.26,
+  "limitations": "HTTP loopback, same machine/storage, repeated synthetic bytes, warm OS caches, no proxy/browser, no original-code baseline, no fsync durability or sustained load measurement. Not a LAN or 10 GB validation."
+}
